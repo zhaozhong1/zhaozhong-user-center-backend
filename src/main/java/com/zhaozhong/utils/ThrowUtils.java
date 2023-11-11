@@ -1,4 +1,4 @@
-package com.zhaozhong.common.utils;
+package com.zhaozhong.utils;
 
 import com.zhaozhong.constant.ResponseConstant.Code;
 import com.zhaozhong.constant.ResponseConstant.Description;

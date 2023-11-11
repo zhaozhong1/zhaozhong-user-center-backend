@@ -1,7 +1,7 @@
 package com.zhaozhong.exception;
 
 import com.zhaozhong.common.BaseResponse;
-import com.zhaozhong.common.utils.ResultUtils;
+import com.zhaozhong.utils.ResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

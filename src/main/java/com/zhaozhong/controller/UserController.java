@@ -1,17 +1,19 @@
 package com.zhaozhong.controller;
 
 import com.zhaozhong.common.BaseResponse;
-import com.zhaozhong.common.utils.ResultUtils;
-import com.zhaozhong.common.utils.ThrowUtils;
+import com.zhaozhong.constant.ResponseConstant.Msg;
+import com.zhaozhong.utils.ResultUtils;
+import com.zhaozhong.utils.ThrowUtils;
 import com.zhaozhong.constant.ResponseConstant.Code;
 import com.zhaozhong.constant.UserConstant;
 import com.zhaozhong.model.domain.User;
 import com.zhaozhong.model.domain.request.UserLoginRequest;
 import com.zhaozhong.model.domain.request.UserRegisterRequest;
+import com.zhaozhong.model.domain.request.UserSearchRequest;
 import com.zhaozhong.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -31,8 +33,6 @@ public class UserController {
     @Resource
     private UserService userService;
 
-    @Autowired
-    HttpServletRequest request;
     /**
      * 注册接口
      * @param userRegisterRequest 注册信息类
@@ -117,18 +117,18 @@ public class UserController {
 
 
     /**
-     * 根据用户名搜索用户(支持模糊查询）
-     * @param userName 用户名
+     * 搜索用户(支持模糊查询）
+     * @param searchUser 前端传入的用户查询对象。
      * @param request 前端请求(得到用户是否为管理员)
      * @return 返回用户列表
      */
-    @GetMapping("/search")
-    public BaseResponse searchUser(String userName, HttpServletRequest request) {
+    @PostMapping("/search")
+    public BaseResponse searchUser(@RequestBody UserSearchRequest searchUser, HttpServletRequest request) {
         log.info("用户名查询操作：");
         if(userService.isNotAdmin(request)){
             ThrowUtils.error(Code.ERROR_NO_AUTH,"错误：无权限","没有管理员权限。");
         }
-        List<User> usersByName = userService.getUsersByName(userName);
+        List<User> usersByName = userService.getUserByRequest(searchUser);
         if(usersByName == null){
             ThrowUtils.error(Code.ERROR_NULL,"错误：无结果","请检查用户名是否填写错误。");
         }
@@ -152,7 +152,82 @@ public class UserController {
         if(!isDelete){
             ThrowUtils.error(Code.ERROR_NULL,"错误：无结果","请检查删除id");
         }
-        return ResultUtils.commonSuccess();
+        return ResultUtils.commonSuccess("删除成功");
     }
 
+    /**
+     * 通过id来修改用户
+     * @param updatedUser 修改的用户信息
+     * @param request 前端请求(得到用户是否为管理员)
+     * @return
+     */
+    @PostMapping("/update")
+    public BaseResponse update(@RequestBody User updatedUser, HttpServletRequest request){
+        log.info("修改操作：");
+        if(userService.isNotAdmin(request)){
+            ThrowUtils.error(Code.ERROR_NO_AUTH,"错误：无权限","没有管理员权限。");
+        }
+        boolean isUpdate = userService.updateUser(updatedUser);
+        if(!isUpdate){
+            ThrowUtils.error(Code.ERROR_NULL,"错误：无结果","请检查更新用户是否存在或正确。");
+        }
+        return ResultUtils.commonSuccess("更新成功");
+    }
+
+
+    /**
+     * 对表格的复选框进行多选来对多个用户进行授权
+     * @param ids 选中的id
+     * @param request 前端请求(得到用户是否为管理员)
+     * @return 返回授权是否成功的布尔值
+     */
+    @PostMapping("/authorized")
+    public BaseResponse authorize(@RequestBody Long[] ids,HttpServletRequest request){
+        log.info("授权操作：");
+        if(userService.isNotAdmin(request)){
+            ThrowUtils.error(Code.ERROR_NO_AUTH,"错误：无权限","没有管理员权限。");
+        }
+        boolean isAuthorized = userService.updateRoleByIds(ids);
+        if(!isAuthorized){
+            ThrowUtils.error(Code.ERROR_NULL,"错误：无结果","请检查更新用户是否存在或正确。");
+        }
+        return ResultUtils.commonSuccess("授权成功");
+    }
+
+    /**
+     * 对表格的复选框进行多选来删除多列
+     * @param ids 选中的id
+     * @param request 前端请求(得到用户是否为管理员)
+     * @return 返回删除是否成功的布尔值
+     */
+    @PostMapping("/deleteByIds")
+    public BaseResponse deleteByIds(@RequestBody Long[] ids,HttpServletRequest request){
+
+        log.info("删除多项操作：");
+        if(userService.isNotAdmin(request)){
+            ThrowUtils.error(Code.ERROR_NO_AUTH,"错误：无权限","没有管理员权限。");
+        }
+        boolean isDelete = userService.deleteByIds(ids);
+        if(!isDelete){
+            ThrowUtils.error(Code.ERROR_NULL,"错误：无结果","请检查更新用户是否存在或正确。");
+        }
+        return ResultUtils.commonSuccess("删除多个用户成功");
+    }
+
+    /**
+     * 新增操作(重要：涉及到云存储等知识)
+     * @param insertUser 插入的用户信息
+     * @param request 前端请求(得到用户是否为管理员)
+     * @return 返回新增是否成功的布尔值
+     */
+    @PostMapping("/addUser")
+    public BaseResponse addUser(@RequestBody User insertUser,HttpServletRequest request){
+        log.info("添加新用户操作");
+
+        boolean isInsert = userService.insertUser(insertUser);
+        if(!isInsert){
+            ThrowUtils.error(Code.ERROR_NULL,"错误：添加失败","请检查添加用户信息是否正确。");
+        }
+        return ResultUtils.commonSuccess();
+    }
 }
